@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Train Management System (TMS)</title>
+    <!-- Tailwind CSS CDN for modern responsive utilities -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand Logo & Title -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('search')">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center text-slate-900 shadow-md font-bold text-xl">
+                        <i class="fa-solid fa-train-subway"></i>
+                    </div>
+                    <div>
+                        <div class="font-extrabold text-lg tracking-tight flex items-center gap-2">
+                            <span>TMS Railway Portal</span>
+                            <span class="text-xs bg-amber-500/20 text-amber-300 font-semibold px-2 py-0.5 rounded-full border border-amber-500/30">C++ / SQLite / Web</span>
+                        </div>
+                        <div class="text-xs text-blue-200">National Railway Passenger & Operations System</div>
+                    </div>
+                </div>
+
+                <!-- Navigation Links -->
+                <nav class="hidden md:flex items-center space-x-1">
+                    <button onclick="switchTab('search')" id="nav-search" class="nav-btn active px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition">
+                        <i class="fa-solid fa-magnifying-glass mr-1.5"></i> Search & Book
+                    </button>
+                    <button onclick="switchTab('pnr')" id="nav-pnr" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition">
+                        <i class="fa-solid fa-ticket mr-1.5"></i> PNR Status
+                    </button>
+                    <button onclick="switchTab('stations')" id="nav-stations" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition text-amber-200">
+                        <i class="fa-solid fa-map-location-dot mr-1.5"></i> Karnataka Stations
+                    </button>
+                    <button onclick="switchTab('bookings')" id="nav-bookings" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition">
+                        <i class="fa-solid fa-clock-rotate-left mr-1.5"></i> My Bookings
+                    </button>
+                    <button onclick="switchTab('operator')" id="nav-operator" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition text-emerald-300">
+                        <i class="fa-solid fa-tower-broadcast mr-1.5"></i> Operator
+                    </button>
+                    <button onclick="switchTab('admin')" id="nav-admin" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition text-amber-300">
+                        <i class="fa-solid fa-shield-halved mr-1.5"></i> Admin
+                    </button>
+                </nav>
+
+                <!-- Auth Buttons / User Profile -->
+                <div class="flex items-center space-x-3" id="auth-container">
+                    <!-- Populated dynamically by app.js -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation bar -->
+        <div class="md:hidden flex overflow-x-auto border-t border-white/10 px-2 py-1.5 space-x-2 text-xs">
+            <button onclick="switchTab('search')" class="px-2.5 py-1 rounded bg-white/10 whitespace-nowrap">Search</button>
+            <button onclick="switchTab('pnr')" class="px-2.5 py-1 rounded bg-white/10 whitespace-nowrap">PNR</button>
+            <button onclick="switchTab('bookings')" class="px-2.5 py-1 rounded bg-white/10 whitespace-nowrap">My Bookings</button>
+            <button onclick="switchTab('operator')" class="px-2.5 py-1 rounded bg-white/10 whitespace-nowrap text-emerald-300">Operator</button>
+            <button onclick="switchTab('admin')" class="px-2.5 py-1 rounded bg-white/10 whitespace-nowrap text-amber-300">Admin</button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- Banner / Notification Toast -->
+        <div id="toast" class="hidden fixed bottom-6 right-6 z-50 max-w-md p-4 rounded-xl shadow-2xl text-white transform transition-all duration-300">
+            <div class="flex items-start space-x-3">
+                <i id="toast-icon" class="text-xl mt-0.5"></i>
+                <div class="flex-1 text-sm font-medium" id="toast-msg"></div>
+                <button onclick="hideToast()" class="text-white/70 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- TAB 1: TRAIN SEARCH & BOOKING                            -->
+        <!-- ======================================================== -->
+        <section id="tab-search" class="tab-content space-y-8">
+            <!-- Hero Search Card -->
+            <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-900 to-indigo-800 p-6 text-white">
+                    <h1 class="text-2xl font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-train"></i> Search Trains & Check Live Availability
+                    </h1>
+                    <p class="text-blue-200 text-sm mt-1">Book ticket reservations across Express, Rajdhani, Vande Bharat, and Superfast trains with real-time seat inventory.</p>
+                </div>
+
+                <div class="p-6">
+                    <form id="search-form" onsubmit="handleSearchTrains(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">From Station</label>
+                            <div class="relative">
+                                <i class="fa-solid fa-location-dot absolute left-3 top-3.5 text-slate-400"></i>
+                                <select id="search-src" class="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 text-sm font-medium bg-slate-50">
+                                    <option value="">Select Origin Station</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">To Station</label>
+                            <div class="relative">
+                                <i class="fa-solid fa-flag-checkered absolute left-3 top-3.5 text-slate-400"></i>
+                                <select id="search-dst" class="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 text-sm font-medium bg-slate-50">
+                                    <option value="">Select Destination Station</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Journey Date</label>
+                            <div class="relative">
+                                <i class="fa-regular fa-calendar absolute left-3 top-3.5 text-slate-400"></i>
+                                <input type="date" id="search-date" class="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 text-sm font-medium bg-slate-50" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Coach Class</label>
+                            <div class="relative">
+                                <i class="fa-solid fa-couch absolute left-3 top-3.5 text-slate-400"></i>
+                                <select id="search-class" class="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 text-sm font-medium bg-slate-50">
+                                    <option value="3A">AC 3 Tier (3A)</option>
+                                    <option value="2A">AC 2 Tier (2A)</option>
+                                    <option value="1A">AC First Class (1A)</option>
+                                    <option value="CC">AC Chair Car (CC)</option>
+                                    <option value="EC">Executive Chair Car (EC)</option>
+                                    <option value="SL">Sleeper (SL)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-4 flex justify-end pt-2">
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-xl shadow-md transition flex items-center gap-2">
+                                <i class="fa-solid fa-magnifying-glass"></i> Find Available Trains
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Search Results Section -->
+            <div id="search-results-section" class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-blue-600"></i> Available Trains & Timetable
+                    </h2>
+                    <span id="results-count" class="text-xs bg-slate-200 text-slate-700 px-2.5 py-1 rounded-full font-semibold">Ready to search</span>
+                </div>
+
+                <div id="trains-list" class="grid grid-cols-1 gap-4">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- TAB 2: PNR STATUS & CANCEL                               -->
+        <!-- ======================================================== -->
+        <section id="tab-pnr" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-2xl shadow-md border border-slate-200 p-6 max-w-2xl mx-auto">
+                <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2 mb-2">
+                    <i class="fa-solid fa-ticket text-blue-600"></i> Check 10-Digit PNR Status
+                </h2>
+                <p class="text-sm text-slate-500 mb-6">Enter your 10-digit Passenger Name Record (PNR) number to inspect live booking status, coach & seat numbers, or cancel ticket.</p>
+
+                <form onsubmit="handleCheckPNR(event)" class="flex gap-3">
+                    <input type="text" id="pnr-input" maxlength="10" placeholder="e.g. 5241839201"
+                           class="flex-1 px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 text-base font-mono tracking-wider font-semibold uppercase bg-slate-50" />
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl shadow-md transition">
+                        Search PNR
+                    </button>
+                </form>
+            </div>
+
+            <div id="pnr-result-card" class="max-w-3xl mx-auto hidden">
+                <!-- Populated dynamically -->
+            </div>
+        <!-- ======================================================== -->
+        <!-- TAB: KARNATAKA STATIONS DIRECTORY                         -->
+        <!-- ======================================================== -->
+        <section id="tab-stations" class="tab-content hidden space-y-6">
+            <div class="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white p-6 rounded-2xl shadow-md flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded text-xs bg-black/20 font-bold uppercase tracking-wider">Karnataka Railway Network</span>
+                        <span class="text-amber-100 text-xs">Exclusively Karnataka Stations</span>
+                    </div>
+                    <h2 class="text-2xl font-extrabold mt-1">Karnataka Railway Stations Directory</h2>
+                    <p class="text-amber-100 text-xs mt-0.5">Comprehensive verified stations across SWR, Konkan Railway, Southern Railway, Central Railway & South Central Railway.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="bg-white/10 px-4 py-2 rounded-xl text-center">
+                        <div class="text-2xl font-black text-white" id="kt-total-count">81</div>
+                        <div class="text-[10px] text-amber-200 uppercase font-semibold">Total Stations</div>
+                    </div>
+                    <div class="bg-white/10 px-4 py-2 rounded-xl text-center">
+                        <div class="text-2xl font-black text-white" id="kt-district-count">29</div>
+                        <div class="text-[10px] text-amber-200 uppercase font-semibold">Districts</div>
+                    </div>
+                    <div class="bg-white/10 px-4 py-2 rounded-xl text-center">
+                        <div class="text-2xl font-black text-white" id="kt-division-count">8</div>
+                        <div class="text-[10px] text-amber-200 uppercase font-semibold">Divisions</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter and Search Controls -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-600 uppercase mb-1">Search Name / Code</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i>
+                        <input type="text" id="filter-station-search" placeholder="e.g. SBC, Bengaluru, Hubballi..."
+                               oninput="filterKarnatakaStations()"
+                               class="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 font-medium" />
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 uppercase mb-1">Filter by District</label>
+                    <select id="filter-station-district" onchange="filterKarnatakaStations()"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 font-medium">
+                        <option value="">All Districts (29)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 uppercase mb-1">Filter by Division</label>
+                    <select id="filter-station-division" onchange="filterKarnatakaStations()"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 font-medium">
+                        <option value="">All Railway Divisions (8)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 uppercase mb-1">Sort Alphabetical</label>
+                    <select id="filter-station-sort" onchange="filterKarnatakaStations()"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 font-medium">
+                        <option value="asc">Name: A to Z</option>
+                        <option value="desc">Name: Z to A</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Stations List Table -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                    <div class="font-bold text-slate-800 text-sm">
+                        Verified Karnataka Railway Stations (<span id="filtered-count">81</span> matching)
+                    </div>
+                    <button onclick="resetStationFilters()" class="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1">
+                        <i class="fa-solid fa-arrows-rotate"></i> Reset Filters
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50 text-slate-600 uppercase font-bold">
+                            <tr>
+                                <th class="p-3">Code</th>
+                                <th class="p-3">Station Name</th>
+                                <th class="p-3">District</th>
+                                <th class="p-3">Zone & Division</th>
+                                <th class="p-3 text-center">Platforms</th>
+                                <th class="p-3">Coordinates</th>
+                                <th class="p-3 text-right">Quick Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="karnataka-stations-tbody" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- TAB 3: MY BOOKINGS                                       -->
+        <!-- ======================================================== -->
+        <section id="tab-bookings" class="tab-content hidden space-y-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">My Booking History</h2>
+                    <p class="text-sm text-slate-500">View past and upcoming electronic reservation slips.</p>
+                </div>
+                <button onclick="loadMyBookings()" class="text-blue-600 hover:text-blue-700 text-sm font-semibold flex items-center gap-1">
+                    <i class="fa-solid fa-arrows-rotate"></i> Refresh
+                </button>
+            </div>
+
+            <div id="my-bookings-list" class="space-y-4">
+                <!-- Populated dynamically -->
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- TAB 4: OPERATOR PORTAL                                   -->
+        <!-- ======================================================== -->
+        <section id="tab-operator" class="tab-content hidden space-y-6">
+            <div class="bg-gradient-to-r from-emerald-800 to-teal-900 text-white p-6 rounded-2xl shadow-md flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded text-xs bg-emerald-500/30 font-bold uppercase tracking-wider">Operator Console</span>
+                        <span class="text-emerald-200 text-xs">Live Railway Traffic Control</span>
+                    </div>
+                    <h2 class="text-2xl font-bold mt-1">Today's Train Schedule & Manifest Control</h2>
+                </div>
+                <button onclick="loadOperatorSchedules()" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2">
+                    <i class="fa-solid fa-arrows-rotate"></i> Reload Timetable
+                </button>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                    <h3 class="font-bold text-slate-800">Scheduled Runs</h3>
+                    <span class="text-xs text-slate-500">Click "Update Delay" or "View Manifest" to inspect passengers</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 text-slate-600 text-xs uppercase font-semibold">
+                            <tr>
+                                <th class="p-3">Train</th>
+                                <th class="p-3">Route</th>
+                                <th class="p-3">Dep / Arr</th>
+                                <th class="p-3">Operating Days</th>
+                                <th class="p-3">Delay Status</th>
+                                <th class="p-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="operator-schedules-body" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Passenger Manifest View (Modal or embedded card) -->
+            <div id="operator-manifest-container" class="hidden bg-white rounded-2xl shadow-md border border-slate-200 p-6 space-y-4">
+                <!-- Populated dynamically -->
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- TAB 5: ADMIN DASHBOARD                                   -->
+        <!-- ======================================================== -->
+        <section id="tab-admin" class="tab-content hidden space-y-6">
+            <!-- Top Metric Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <div class="text-xs uppercase font-semibold text-slate-400">Total Bookings</div>
+                        <div class="text-2xl font-extrabold text-slate-800 mt-1" id="stat-bookings">-</div>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-ticket"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <div class="text-xs uppercase font-semibold text-slate-400">Net Revenue</div>
+                        <div class="text-2xl font-extrabold text-emerald-600 mt-1" id="stat-revenue">-</div>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-indian-rupee-sign"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <div class="text-xs uppercase font-semibold text-slate-400">Active Trains</div>
+                        <div class="text-2xl font-extrabold text-slate-800 mt-1" id="stat-trains">-</div>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-train"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <div class="text-xs uppercase font-semibold text-slate-400">Total Stations</div>
+                        <div class="text-2xl font-extrabold text-slate-800 mt-1" id="stat-stations">-</div>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-landmark"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Sub-navigation -->
+            <div class="flex border-b border-slate-200 space-x-4">
+                <button onclick="switchAdminTab('trains')" id="admin-tab-trains" class="admin-tab-btn border-b-2 border-blue-600 text-blue-600 font-semibold py-2 px-1 text-sm">
+                    Manage Trains
+                </button>
+                <button onclick="switchAdminTab('stations')" id="admin-tab-stations" class="admin-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-semibold py-2 px-1 text-sm">
+                    Manage Stations
+                </button>
+                <button onclick="switchAdminTab('bookings')" id="admin-tab-bookings" class="admin-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-semibold py-2 px-1 text-sm">
+                    All System Bookings
+                </button>
+                <button onclick="switchAdminTab('audit')" id="admin-tab-audit" class="admin-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-semibold py-2 px-1 text-sm">
+                    Audit Logs
+                </button>
+            </div>
+
+            <!-- Admin Tab: Trains -->
+            <div id="admin-section-trains" class="admin-section space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800">Fleet Inventory</h3>
+                    <button onclick="openAddTrainModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-plus"></i> Add New Train
+                    </button>
+                </div>
+                <div class="bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-sm">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 text-slate-600 text-xs uppercase font-semibold">
+                            <tr>
+                                <th class="p-3">Number</th>
+                                <th class="p-3">Name</th>
+                                <th class="p-3">Category</th>
+                                <th class="p-3">Origin -> Dest</th>
+                                <th class="p-3">Base Fare / km</th>
+                                <th class="p-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-trains-table" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Admin Tab: Stations -->
+            <div id="admin-section-stations" class="admin-section hidden space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800">Railway Stations</h3>
+                    <button onclick="openAddStationModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-plus"></i> Add New Station
+                    </button>
+                </div>
+                <div class="bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-sm">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 text-slate-600 text-xs uppercase font-semibold">
+                            <tr>
+                                <th class="p-3">Code</th>
+                                <th class="p-3">Station Name</th>
+                                <th class="p-3">City</th>
+                                <th class="p-3">State</th>
+                                <th class="p-3">Platforms</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-stations-table" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Admin Tab: Bookings -->
+            <div id="admin-section-bookings" class="admin-section hidden space-y-4">
+                <h3 class="font-bold text-slate-800">All Reservations Master Record</h3>
+                <div class="bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-sm">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 text-slate-600 text-xs uppercase font-semibold">
+                            <tr>
+                                <th class="p-3">PNR</th>
+                                <th class="p-3">User</th>
+                                <th class="p-3">Train</th>
+                                <th class="p-3">Date</th>
+                                <th class="p-3">Class</th>
+                                <th class="p-3">Passengers</th>
+                                <th class="p-3">Total Fare</th>
+                                <th class="p-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-bookings-table" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Admin Tab: Audit Logs -->
+            <div id="admin-section-audit" class="admin-section hidden space-y-4">
+                <h3 class="font-bold text-slate-800">System Security Audit Logs</h3>
+                <div class="bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-sm">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50 text-slate-600 uppercase font-semibold">
+                            <tr>
+                                <th class="p-3">Timestamp</th>
+                                <th class="p-3">User</th>
+                                <th class="p-3">Action</th>
+                                <th class="p-3">Entity</th>
+                                <th class="p-3">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-audit-table" class="divide-y divide-slate-100 font-mono">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-6 mt-12 border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2 text-slate-300">
+                <i class="fa-solid fa-train text-amber-500"></i>
+                <span class="font-semibold">Train Management System (TMS)</span>
+                <span>• Modern C++ Backend & Relational SQLite Web Architecture</span>
+            </div>
+            <div class="flex gap-4">
+                <span>C++17 / GCC 12</span>
+                <span>SQLite3 C-API & Node22</span>
+                <span>RBAC Authorized</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ======================================================== -->
+    <!-- MODALS                                                   -->
+    <!-- ======================================================== -->
+
+    <!-- Booking Modal -->
+    <div id="booking-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="bg-blue-900 text-white p-5 flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-lg" id="modal-train-title">Book Tickets</h3>
+                    <div class="text-xs text-blue-200" id="modal-train-subtitle">Select passengers and payment mode</div>
+                </div>
+                <button onclick="closeBookingModal()" class="text-white/70 hover:text-white text-xl">&times;</button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-6 flex-1">
+                <!-- Passenger List (Max 6) -->
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <label class="text-sm font-bold text-slate-800">Passengers (Maximum 6)</label>
+                        <button type="button" onclick="addPassengerRow()" id="add-passenger-btn" class="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2.5 py-1 rounded-lg font-semibold hover:bg-blue-100">
+                            <i class="fa-solid fa-user-plus mr-1"></i> Add Passenger
+                        </button>
+                    </div>
+
+                    <div id="passengers-container" class="space-y-3">
+                        <!-- Dynamic rows -->
+                    </div>
+                </div>
+
+                <!-- Fare Breakdown Summary -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs space-y-1.5">
+                    <div class="flex justify-between text-slate-600">
+                        <span>Fare per Passenger (incl. GST & reservation):</span>
+                        <span id="summary-single-fare" class="font-semibold text-slate-800">Rs. 0</span>
+                    </div>
+                    <div class="flex justify-between text-slate-600">
+                        <span>Number of Passengers:</span>
+                        <span id="summary-passenger-count" class="font-semibold text-slate-800">1</span>
+                    </div>
+                    <div class="flex justify-between text-sm font-bold text-slate-900 border-t border-slate-200 pt-2">
+                        <span>Total Payable:</span>
+                        <span id="summary-total-fare" class="text-blue-700 font-extrabold text-base">Rs. 0</span>
+                    </div>
+                </div>
+
+                <!-- Simulated Payment Method -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-2">Simulated Payment Mode</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <label class="border border-slate-200 rounded-xl p-3 flex flex-col items-center cursor-pointer hover:border-blue-500 has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50">
+                            <input type="radio" name="payment-method" value="UPI" checked class="sr-only">
+                            <i class="fa-solid fa-mobile-screen text-xl text-blue-600 mb-1"></i>
+                            <span class="text-xs font-semibold">UPI Payment</span>
+                        </label>
+                        <label class="border border-slate-200 rounded-xl p-3 flex flex-col items-center cursor-pointer hover:border-blue-500 has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50">
+                            <input type="radio" name="payment-method" value="CARD" class="sr-only">
+                            <i class="fa-regular fa-credit-card text-xl text-indigo-600 mb-1"></i>
+                            <span class="text-xs font-semibold">Debit / Credit Card</span>
+                        </label>
+                        <label class="border border-slate-200 rounded-xl p-3 flex flex-col items-center cursor-pointer hover:border-blue-500 has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50">
+                            <input type="radio" name="payment-method" value="CASH" class="sr-only">
+                            <i class="fa-solid fa-money-bill-wave text-xl text-emerald-600 mb-1"></i>
+                            <span class="text-xs font-semibold">Cash at Counter</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-end gap-3">
+                <button type="button" onclick="closeBookingModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100">
+                    Cancel
+                </button>
+                <button type="button" onclick="confirmBooking()" id="confirm-booking-btn" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-md transition">
+                    Confirm & Pay
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ticket ERS View Modal -->
+    <div id="ticket-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-6 space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </span>
+                    <h3 class="font-bold text-lg text-slate-800">Booking Confirmed!</h3>
+                </div>
+                <button onclick="closeTicketModal()" class="text-slate-400 hover:text-slate-600">&times;</button>
+            </div>
+
+            <div id="ticket-content" class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-3 font-sans">
+                <!-- ERS rendered dynamically -->
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="window.print()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-print"></i> Print Slip
+                </button>
+                <button onclick="closeTicketModal()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold">
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login / Register Modal -->
+    <div id="auth-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-5">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-xl text-slate-800" id="auth-modal-title">Sign In</h3>
+                <button onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Username</label>
+                    <input type="text" id="login-username" required placeholder="admin / operator1 / passenger1"
+                           class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-600 bg-slate-50" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Password</label>
+                    <input type="password" id="login-password" required placeholder="••••••••"
+                           class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-600 bg-slate-50" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Role</label>
+                    <select id="login-role" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-600 bg-slate-50">
+                        <option value="PASSENGER">Passenger</option>
+                        <option value="OPERATOR">Railway Operator</option>
+                        <option value="ADMIN">System Administrator</option>
+                    </select>
+                </div>
+
+                <div class="text-xs text-slate-500 bg-blue-50 p-2.5 rounded-lg border border-blue-100">
+                    <span class="font-semibold text-blue-700">Quick Test Credentials:</span><br>
+                    • Admin: <code class="text-blue-900 font-mono">admin</code> / <code class="text-blue-900 font-mono">Admin@123</code><br>
+                    • Operator: <code class="text-blue-900 font-mono">operator1</code> / <code class="text-blue-900 font-mono">Oper@123</code><br>
+                    • Passenger: <code class="text-blue-900 font-mono">passenger1</code> / <code class="text-blue-900 font-mono">Pass@123</code>
+                </div>
+
+                <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition">
+                    Sign In
+                </button>
+
+                <div class="text-center text-xs text-slate-500 pt-1">
+                    Don't have an account? <a href="#" onclick="showRegisterForm(event)" class="text-blue-600 font-semibold underline">Register here</a>
+                </div>
+            </form>
+
+            <!-- Register Form (Hidden initially) -->
+            <form id="register-form" onsubmit="handleRegisterSubmit(event)" class="space-y-3 hidden">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Full Name</label>
+                    <input type="text" id="reg-fullname" required placeholder="Rahul Verma" class="w-full px-3 py-2 rounded-xl border text-sm" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Username</label>
+                    <input type="text" id="reg-username" required placeholder="rahul_v" class="w-full px-3 py-2 rounded-xl border text-sm" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Email</label>
+                    <input type="email" id="reg-email" required placeholder="rahul@example.com" class="w-full px-3 py-2 rounded-xl border text-sm" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Phone</label>
+                    <input type="tel" id="reg-phone" required placeholder="9876500000" class="w-full px-3 py-2 rounded-xl border text-sm" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Password</label>
+                    <input type="password" id="reg-password" required placeholder="••••••••" class="w-full px-3 py-2 rounded-xl border text-sm" />
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition">
+                    Create Passenger Account
+                </button>
+                <div class="text-center text-xs text-slate-500">
+                    Already registered? <a href="#" onclick="showLoginForm(event)" class="text-blue-600 font-semibold underline">Sign In</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Cancellation Confirmation Modal -->
+    <div id="cancel-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+            <div class="flex items-center gap-2 text-rose-600">
+                <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                <h3 class="font-bold text-lg text-slate-800">Confirm Ticket Cancellation</h3>
+            </div>
+
+            <p class="text-xs text-slate-600" id="cancel-modal-desc">
+                Refund policy calculation will apply based on departure time.
+            </p>
+
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+                <div class="font-bold text-slate-700 mb-1">Official Refund Rules:</div>
+                <div class="text-slate-500">• &gt;48 hours before departure: 90% refund</div>
+                <div class="text-slate-500">• 24 to 48 hours: 75% refund</div>
+                <div class="text-slate-500">• 12 to 24 hours: 50% refund</div>
+                <div class="text-slate-500">• 4 to 12 hours: 25% refund</div>
+                <div class="text-slate-500">• &lt;4 hours: 0% refund</div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Hours before departure (for simulation):</label>
+                <input type="number" id="cancel-hours" value="36" min="1" max="120"
+                       class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm" />
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeCancelModal()" class="px-4 py-2 border rounded-xl text-xs font-semibold text-slate-600">
+                    Dismiss
+                </button>
+                <button onclick="executeCancellation()" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md">
+                    Proceed with Cancellation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "name": "Train Management System",
+  "description": "Modular C++ and Android Train Management System (TMS) with database, scheduling, booking, and administrative operations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
